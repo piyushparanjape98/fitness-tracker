@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="text-align: center; max-width: 600px; margin: 0 auto;">
+    <h1 style="color: #667eea; margin-bottom: 1rem;">🏋️ Welcome to Fitness Tracker</h1>
+    <p style="font-size: 1.1rem; margin-bottom: 2rem; color: #666;">
+        Track your nutrition, reach your fitness goals, and build healthy habits with our personalized approach.
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        <a href="{{ url_for('login') }}" class="btn">Login</a>
+        <a href="{{ url_for('register') }}" class="btn btn-secondary">Sign Up</a>
+    </div>
+</div>
+{% endblock %}

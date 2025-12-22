@@ -1,0 +1,220 @@
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Base styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    min-height: 100vh;
+    color: #1a1a2e;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 20px;
+}
+
+/* Navbar */
+.navbar {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(15px);
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 24px rgba(37, 117, 252, 0.15);
+    margin-bottom: 2rem;
+    color: white;
+}
+
+.navbar h1 {
+    font-weight: 700;
+    font-size: 1.7rem;
+    letter-spacing: 1.2px;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1.2rem;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: background 0.3s ease;
+}
+
+.nav-links a:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Cards */
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 25px rgba(37, 117, 252, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 14px 30px rgba(37, 117, 252, 0.2);
+}
+
+/* Grid layout */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #2575fc, #6a11cb);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 8px 16px rgba(101, 53, 255, 0.3);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card .stat-value {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+/* Progress bars */
+.progress-bar {
+    background: #e3eaff;
+    border-radius: 12px;
+    height: 14px;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+    border-radius: 12px;
+    transition: width 0.5s ease;
+}
+
+/* Buttons */
+.btn {
+    display: inline-block;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    padding: 0.75rem 2.2rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    transition: box-shadow 0.3s ease, transform 0.2s ease;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.btn:hover {
+    box-shadow: 0 8px 18px rgba(37, 117, 252, 0.5);
+    transform: translateY(-3px);
+}
+
+.btn-secondary {
+    background: #5a5f7d;
+}
+
+.btn-info {
+    background: #4dabf7;
+}
+
+/* Food log item */
+.food-log-item {
+    background: #f9faff;
+    border-radius: 14px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 0.7rem;
+    display: flex;
+    justify-content: space-between;
+    box-shadow: 0 8px 20px rgba(101, 53, 255, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.food-log-item:hover {
+    box-shadow: 0 10px 30px rgba(101, 53, 255, 0.3);
+}
+
+.food-log-item h4 {
+    color: #663399;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+
+.food-log-item small {
+    color: #555;
+}
+
+/* Calories highlight */
+.calories {
+    font-weight: 700;
+    color: #2575fc;
+}
+
+/* Form styles */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.65rem;
+    display: block;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 2px solid #dbe6ff;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #6a11cb;
+    outline: none;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-links {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+}

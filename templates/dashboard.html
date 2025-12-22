@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+
+    <div>
+        <!-- Welcome username line -->
+        <h2 style="margin-bottom: 2rem;">Welcome, {{ user.username }}!</h2>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>{{ "%.0f"|format(total_calories) }}</h3>
+                <p>Calories Consumed</p>
+                <div class="progress-bar">
+                    <div class="progress-fill"
+                        style="width: {{ (total_calories / user.target_calories * 100)|round(1) }}%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <h3>{{ "%.0f"|format(remaining_calories) }}</h3>
+                <p>Calories Remaining</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>{{ "%.1f"|format(total_protein) }}g</h3>
+                <p>Protein</p>
+            </div>
+
+            <div class="stat-card">
+                <h3>{{ "%.1f"|format(total_carbs) }}g</h3>
+                <p>Carbohydrates</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Today's Food Log</h3>
+
+            {% if today_logs %}
+            {% for log in today_logs %}
+            <div class="food-log-item">
+                <div>
+                    <h4>{{ log.food_name|title }}</h4>
+                    <small>{{ log.quantity }} g • P: {{ "%.1f"|format(log.protein) }}g • C: {{ "%.1f"|format(log.carbs)
+                        }}g • F: {{ "%.1f"|format(log.fat) }}g</small>
+                </div>
+                <div class="calories">{{ "%.0f"|format(log.calories) }} cal</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <p style="text-align: center; color: #666; padding: 2rem;">No food logged today. <a
+                    href="{{ url_for('log_food') }}" style="color: #667eea;">Add your first meal!</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Quick Actions</h3>
+
+            <a href="{{ url_for('log_food') }}" class="btn"
+                style="width: 100%; margin-bottom: 1rem; display: block; text-align: center; text-decoration: none;">➕
+                Log Food</a>
+
+            <a href="{{ url_for('profile') }}" class="btn btn-secondary"
+                style="width: 100%; display: block; text-align: center; text-decoration: none;">👤 View Profile</a>
+
+            <!-- Added analytics link here -->
+            <a href="{{ url_for('analytics') }}" class="btn btn-info"
+                style="width: 100%; margin-top: 1rem; display: block; text-align: center; text-decoration: none;">📊
+                View Analytics</a>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Daily Goal</h3>
+            <p><strong>Target:</strong> {{ user.target_calories }} calories</p>
+            <p><strong>Goal:</strong> {{ user.goal|title }} Weight</p>
+            <div style="margin-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Progress</span>
+                    <span>{{ "%.1f"|format(total_calories / user.target_calories * 100) }}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"
+                        style="width: {{ (total_calories / user.target_calories * 100)|round(1) }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

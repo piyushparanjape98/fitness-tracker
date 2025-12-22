@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>📊 Your Analytics Dashboard</h2>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ "%.0f"|format(achievement_rate) }}%</div>
+        <div>Goal Achievement</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ daily_calories|length }}</div>
+        <div>Days Tracked</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ "%.0f"|format(weekly_macros.protein or 0) }}g</div>
+        <div>Avg Daily Protein</div>
+    </div>
+</div>
+
+<div class="time-selector">
+    <div class="btn-group">
+        <button onclick="updateCharts(7)" class="active" id="btn-7">7 Days</button>
+        <button onclick="updateCharts(14)" id="btn-14">2 Weeks</button>
+        <button onclick="updateCharts(30)" id="btn-30">30 Days</button>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="chart-card">
+        <h3>Daily Calories</h3>
+        <canvas id="caloriesChart" width="400" height="300"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h3>Macro Breakdown</h3>
+        <canvas id="macroChart" width="400" height="300"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h3>Weekly Trends</h3>
+        <canvas id="trendsChart" width="400" height="300"></canvas>
+    </div>
+
+    <div class="chart-card">
+        <h3>Goal Progress</h3>
+        <canvas id="progressChart" width="400" height="300"></canvas>
+    </div>
+</div>
+
+<a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
+
+<script>
+    let charts = {};
+    const targetCalories = {{ target_calories }};
+
+    function updateCharts(days) {
+        document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-${days}`).classList.add('active');
+
+        fetch(`/api/analytics_data?days=${days}`)
+            .then(response => response.json())
+            .then(data => {
+                createCaloriesChart(data);
+                createMacroChart(data);
+                createTrendsChart(data);
+                createProgressChart(data);
+            });
+    }
+
+    function createCaloriesChart(data) {
+        const ctx = document.getElementById('caloriesChart').getContext('2d');
+        if (charts.calories) charts.calories.destroy();
+        charts.calories = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => new Date(d.date).toLocaleDateString()),
+                datasets: [{
+                    label: 'Calories Consumed',
+                    data: data.map(d => d.calories),
+                    borderColor: '#ff6b6b',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Target',
+                    data: Array(data.length).fill(targetCalories),
+                    borderColor: '#4ecdc4',
+                    borderDash: [5, 5],
+                    pointRadius: 0
+                }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    function createMacroChart(data) {
+        const ctx = document.getElementById('macroChart').getContext('2d');
+        if (charts.macro) charts.macro.destroy();
+
+        const avgProtein = data.reduce((sum, d) => sum + d.protein, 0) / data.length;
+        const avgCarbs = data.reduce((sum, d) => sum + d.carbs, 0) / data.length;
+        const avgFat = data.reduce((sum, d) => sum + d.fat, 0) / data.length;
+
+        charts.macro = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Protein', 'Carbs', 'Fat'],
+                datasets: [{
+                    data: [avgProtein, avgCarbs, avgFat],
+                    backgroundColor: ['#ff9f43', '#10ac84', '#ee5a52'],
+                    borderWidth: 0
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function createTrendsChart(data) {
+        const ctx = document.getElementById('trendsChart').getContext('2d');
+        if (charts.trends) charts.trends.destroy();
+
+        charts.trends = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.map(d => new Date(d.date).toLocaleDateString()),
+                datasets: [{
+                    label: 'Protein',
+                    data: data.map(d => d.protein),
+                    backgroundColor: '#ff9f43',
+                    stack: 'Stack 0'
+                }, {
+                    label: 'Carbs',
+                    data: data.map(d => d.carbs),
+                    backgroundColor: '#10ac84',
+                    stack: 'Stack 0'
+                }, {
+                    label: 'Fat',
+                    data: data.map(d => d.fat),
+                    backgroundColor: '#ee5a52',
+                    stack: 'Stack 0'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function createProgressChart(data) {
+        const ctx = document.getElementById('progressChart').getContext('2d');
+        if (charts.progress) charts.progress.destroy();
+
+        const progressData = data.map(d => {
+            const diff = d.calories - targetCalories;
+            return Math.max(0, 100 - Math.abs(diff) / targetCalories * 100);
+        });
+
+        charts.progress = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(d => new Date(d.date).toLocaleDateString()),
+                datasets: [{
+                    label: 'Goal Achievement %',
+                    data: progressData,
+                    borderColor: '#4ecdc4',
+                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: value => value + '%' }
+                    }
+                }
+            }
+        });
+    }
+
+    updateCharts(7);
+</script>
+{% endblock %}

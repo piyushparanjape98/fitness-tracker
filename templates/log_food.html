@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>🍽️ Log Food</h2>
+
+    <form id="food-form" method="POST">
+        <!-- New Search Interface -->
+        <div class="search-container">
+            <label>Search for food:</label>
+            <input type="text" id="food-search" placeholder="Start typing food name..." autocomplete="off">
+            <div id="search-results" class="search-results"></div>
+        </div>
+
+        <!-- Selected Food Display -->
+        <div id="selected-food" class="selected-food" style="display: none;">
+            <h4 id="selected-name"></h4>
+            <div id="selected-nutrition" class="nutrition-info"></div>
+        </div>
+
+        <!-- Hidden form fields -->
+        <input type="hidden" id="food_name" name="food_name" required>
+        <input type="hidden" id="custom_calories" name="custom_calories">
+        <input type="hidden" id="custom_protein" name="custom_protein">
+        <input type="hidden" id="custom_carbs" name="custom_carbs">
+        <input type="hidden" id="custom_fat" name="custom_fat">
+
+        <div class="form-group">
+            <label>Quantity (grams):</label>
+            <input type="number" name="quantity" id="quantity" step="0.1" value="100" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Log Food</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </form>
+</div>
+
+<script>
+    let searchTimeout;
+    let selectedFood = null;
+
+    const searchInput = document.getElementById('food-search');
+    const searchResults = document.getElementById('search-results');
+    const selectedFoodDiv = document.getElementById('selected-food');
+
+    searchInput.addEventListener('input', function () {
+        const query = this.value.trim();
+
+        clearTimeout(searchTimeout);
+
+        if (query.length < 2) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            fetch(`/api/search_foods?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(foods => displaySearchResults(foods))
+                .catch(error => console.error('Search error:', error));
+        }, 300);
+    });
+
+    function displaySearchResults(foods) {
+        if (foods.length === 0) {
+            searchResults.style.display = 'none';
+            return;
+        }
+
+        searchResults.innerHTML = foods.map(food => `
+            <div class="search-result" onclick="selectFood(${JSON.stringify(food).replace(/"/g, '&quot;')})">
+                <strong>${food.name}</strong>
+                <div class="nutrition-info">
+                    ${Math.round(food.calories)} cal, 
+                    ${Math.round(food.protein)}g protein, 
+                    ${Math.round(food.carbs)}g carbs, 
+                    ${Math.round(food.fat)}g fat
+                    <small>(per 100g)</small>
+                </div>
+            </div>
+        `).join('');
+
+        searchResults.style.display = 'block';
+    }
+
+    function selectFood(food) {
+        selectedFood = food;
+
+        // Update UI
+        document.getElementById('selected-name').textContent = food.name;
+        document.getElementById('selected-nutrition').innerHTML = `
+            <strong>Per 100g:</strong> ${Math.round(food.calories)} calories, 
+            ${Math.round(food.protein)}g protein, 
+            ${Math.round(food.carbs)}g carbs, 
+            ${Math.round(food.fat)}g fat
+        `;
+
+        // Update form fields
+        document.getElementById('food_name').value = food.name;
+        document.getElementById('custom_calories').value = food.calories;
+        document.getElementById('custom_protein').value = food.protein;
+        document.getElementById('custom_carbs').value = food.carbs;
+        document.getElementById('custom_fat').value = food.fat;
+
+        // Show selected food, hide search results
+        selectedFoodDiv.style.display = 'block';
+        searchResults.style.display = 'none';
+        searchInput.value = food.name;
+    }
+
+    // Hide search results when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.search-container')) {
+            searchResults.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

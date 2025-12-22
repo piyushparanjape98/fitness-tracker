@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+    <h2 style="text-align: center; margin-bottom: 2rem; color: #667eea;">Your Profile</h2>
+
+    <div style="display: grid; gap: 1rem;">
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <strong>Username:</strong> {{ user.username }}
+        </div>
+
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <strong>Email:</strong> {{ user.email }}
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <strong>Height:</strong> {{ user.height }} cm
+            </div>
+
+            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                <strong>Weight:</strong> {{ user.weight }} kg
+            </div>
+        </div>
+
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <strong>Age:</strong> {{ user.age }} years
+        </div>
+
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <strong>Fitness Goal:</strong> {{ user.goal|title }} Weight
+        </div>
+
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <strong>Daily Calorie Target:</strong> {{ user.target_calories }} calories
+        </div>
+
+        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <strong>Member Since:</strong> {{ user.created_at.strftime('%B %d, %Y') }}
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('dashboard') }}" style="color: #667eea;">← Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
