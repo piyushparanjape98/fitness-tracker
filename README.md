@@ -45,4 +45,24 @@ Users can register, log in, log their meals, and visualize calories and macros t
 ---
 
 ## Project Structure
+project-root/
+│
+├── app.py # Main Flask application
+├── requirements.txt # Python dependencies
+├── README.md # Project documentation
+│
+├── templates/
+│ ├── base.html # Base layout + navbar
+│ ├── register.html # Registration page
+│ ├── login.html # Login page
+│ ├── dashboard.html # Main dashboard (daily stats)
+│ ├── analytics.html # Analytics + charts
+│ └── profile.html # User profile and goals
+│
+└── static/
+├── css/
+│ └── style.css # Global styles (modern UI)
+└── js/
+└── chart.min.js # Local Chart.js bundle
 
+---
