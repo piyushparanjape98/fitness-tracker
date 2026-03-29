@@ -1,118 +1,236 @@
 {% extends "base.html" %}
-
+{% block title %}Log Food – FitTrack{% endblock %}
 {% block content %}
-<div class="container">
-    <h2>🍽️ Log Food</h2>
+<div class="log-food-page">
 
-    <form id="food-form" method="POST">
-        <!-- New Search Interface -->
-        <div class="search-container">
-            <label>Search for food:</label>
-            <input type="text" id="food-search" placeholder="Start typing food name..." autocomplete="off">
-            <div id="search-results" class="search-results"></div>
-        </div>
+    <div class="page-header">
+        <a href="{{ url_for('dashboard') }}" class="back-btn">← Back</a>
+        <h1 class="page-title">🍽️ Log Food</h1>
+    </div>
 
-        <!-- Selected Food Display -->
-        <div id="selected-food" class="selected-food" style="display: none;">
-            <h4 id="selected-name"></h4>
-            <div id="selected-nutrition" class="nutrition-info"></div>
-        </div>
+    <div class="card">
+        <form id="food-form" method="POST" action="{{ url_for('log_food') }}">
 
-        <!-- Hidden form fields -->
-        <input type="hidden" id="food_name" name="food_name" required>
-        <input type="hidden" id="custom_calories" name="custom_calories">
-        <input type="hidden" id="custom_protein" name="custom_protein">
-        <input type="hidden" id="custom_carbs" name="custom_carbs">
-        <input type="hidden" id="custom_fat" name="custom_fat">
+            <!-- Search -->
+            <div class="form-group search-group">
+                <label class="form-label">Search Food</label>
+                <div class="search-wrap">
+                    <input type="text" id="food-search"
+                           placeholder="e.g. banana, chapati, rice..."
+                           autocomplete="off" autocorrect="off" spellcheck="false">
+                    <span class="search-icon">🔍</span>
+                </div>
+                <div id="search-results" class="search-results"></div>
+            </div>
 
-        <div class="form-group">
-            <label>Quantity (grams):</label>
-            <input type="number" name="quantity" id="quantity" step="0.1" value="100" required>
-        </div>
+            <!-- Selected food preview -->
+            <div id="selected-food" class="selected-food" style="display:none;">
+                <div class="selected-header">
+                    <span class="selected-check">✅</span>
+                    <h4 id="selected-name"></h4>
+                </div>
+                <div id="selected-nutrition" class="nutrition-chips"></div>
+            </div>
 
-        <button type="submit" class="btn btn-primary">Log Food</button>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
-    </form>
+            <!-- Unit toggle (shows only when pieces available) -->
+            <div id="unit-toggle" class="unit-toggle" style="display:none;">
+                <span class="unit-label">Measure by:</span>
+                <div class="unit-tabs">
+                    <button type="button" class="unit-tab active" id="tab-grams" onclick="switchUnit('grams')">⚖️ Grams</button>
+                    <button type="button" class="unit-tab" id="tab-pieces" onclick="switchUnit('pieces')">🔢 Pieces / Serving</button>
+                </div>
+            </div>
+
+            <!-- Gram mode -->
+            <div id="gram-mode">
+                <div class="form-group">
+                    <label class="form-label">Quantity (grams)</label>
+                    <div class="qty-row">
+                        <button type="button" class="qty-btn" onclick="adjustQty(-50)">−50</button>
+                        <input type="number" id="quantity-g" step="1" value="100" min="1">
+                        <button type="button" class="qty-btn" onclick="adjustQty(50)">+50</button>
+                    </div>
+                    <div class="qty-presets">
+                        <button type="button" class="preset-btn" onclick="setQty(50)">50g</button>
+                        <button type="button" class="preset-btn" onclick="setQty(100)">100g</button>
+                        <button type="button" class="preset-btn" onclick="setQty(150)">150g</button>
+                        <button type="button" class="preset-btn" onclick="setQty(200)">200g</button>
+                        <button type="button" class="preset-btn" onclick="setQty(250)">250g</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Piece mode -->
+            <div id="piece-mode" style="display:none;">
+                <div class="form-group">
+                    <label class="form-label">Select Serving Type</label>
+                    <select id="measure-select" class="measure-select" onchange="onMeasureChange()"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">How many?</label>
+                    <div class="qty-row">
+                        <button type="button" class="qty-btn" onclick="adjustPieces(-1)">−1</button>
+                        <input type="number" id="quantity-p" step="0.5" value="1" min="0.5">
+                        <button type="button" class="qty-btn" onclick="adjustPieces(1)">+1</button>
+                    </div>
+                    <div class="qty-presets">
+                        <button type="button" class="preset-btn" onclick="setPieces(0.5)">½</button>
+                        <button type="button" class="preset-btn" onclick="setPieces(1)">1</button>
+                        <button type="button" class="preset-btn" onclick="setPieces(2)">2</button>
+                        <button type="button" class="preset-btn" onclick="setPieces(3)">3</button>
+                        <button type="button" class="preset-btn" onclick="setPieces(4)">4</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hidden fields -->
+            <input type="hidden" id="food_name"       name="food_name">
+            <input type="hidden" id="quantity"         name="quantity">
+            <input type="hidden" id="unit"             name="unit" value="g">
+            <input type="hidden" id="final_calories"   name="final_calories">
+            <input type="hidden" id="final_protein"    name="final_protein">
+            <input type="hidden" id="final_carbs"      name="final_carbs">
+            <input type="hidden" id="final_fat"        name="final_fat">
+
+            <!-- Live calorie preview -->
+            <div id="cal-preview" class="cal-preview" style="display:none;">
+                <span>Estimated: <strong id="preview-qty-label">100g</strong></span>
+                <strong id="preview-cal" class="preview-cal-val">—</strong>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn" disabled>
+                Log Food
+            </button>
+        </form>
+    </div>
 </div>
 
 <script>
-    let searchTimeout;
-    let selectedFood = null;
+let selectedFood = null;
+let currentUnit  = 'grams';
+let searchTimeout;
 
-    const searchInput = document.getElementById('food-search');
-    const searchResults = document.getElementById('search-results');
-    const selectedFoodDiv = document.getElementById('selected-food');
+const searchInput   = document.getElementById('food-search');
+const searchResults = document.getElementById('search-results');
 
-    searchInput.addEventListener('input', function () {
-        const query = this.value.trim();
-
-        clearTimeout(searchTimeout);
-
-        if (query.length < 2) {
-            searchResults.style.display = 'none';
-            return;
-        }
-
-        searchTimeout = setTimeout(() => {
-            fetch(`/api/search_foods?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(foods => displaySearchResults(foods))
-                .catch(error => console.error('Search error:', error));
-        }, 300);
-    });
-
-    function displaySearchResults(foods) {
-        if (foods.length === 0) {
-            searchResults.style.display = 'none';
-            return;
-        }
-
-        searchResults.innerHTML = foods.map(food => `
-            <div class="search-result" onclick="selectFood(${JSON.stringify(food).replace(/"/g, '&quot;')})">
-                <strong>${food.name}</strong>
-                <div class="nutrition-info">
-                    ${Math.round(food.calories)} cal, 
-                    ${Math.round(food.protein)}g protein, 
-                    ${Math.round(food.carbs)}g carbs, 
-                    ${Math.round(food.fat)}g fat
-                    <small>(per 100g)</small>
-                </div>
-            </div>
-        `).join('');
-
+searchInput.addEventListener('input', function () {
+    const q = this.value.trim();
+    clearTimeout(searchTimeout);
+    if (q.length < 2) { searchResults.style.display = 'none'; return; }
+    searchTimeout = setTimeout(() => {
+        searchResults.innerHTML = '<div class="search-loading">Searching…</div>';
         searchResults.style.display = 'block';
+        fetch(`/api/search_foods?q=${encodeURIComponent(q)}`)
+            .then(r => r.json())
+            .then(displayResults)
+            .catch(() => searchResults.style.display = 'none');
+    }, 350);
+});
+
+function displayResults(foods) {
+    if (!foods.length) {
+        searchResults.innerHTML = '<div class="search-empty">No results. Try a different name.</div>';
+        searchResults.style.display = 'block';
+        return;
+    }
+    searchResults.innerHTML = foods.slice(0, 8).map(f => `
+        <div class="search-result" onclick='selectFood(${JSON.stringify(f).replace(/'/g,"&#39;")})'>
+            <span class="result-name">${f.name}</span>
+            <span class="result-cal">${Math.round(f.calories)} kcal/100g</span>
+        </div>
+    `).join('');
+    searchResults.style.display = 'block';
+}
+
+function selectFood(food) {
+    selectedFood = food;
+    document.getElementById('selected-name').textContent = food.name;
+    document.getElementById('selected-nutrition').innerHTML = `
+        <span class="n-chip cal-chip">${Math.round(food.calories)} kcal</span>
+        <span class="n-chip">P: ${Math.round(food.protein)}g</span>
+        <span class="n-chip">C: ${Math.round(food.carbs)}g</span>
+        <span class="n-chip">F: ${Math.round(food.fat)}g</span>
+        <small class="per-100">per 100g</small>
+    `;
+    document.getElementById('food_name').value = food.name;
+    document.getElementById('selected-food').style.display = 'block';
+    searchResults.style.display = 'none';
+    searchInput.value = food.name;
+    document.getElementById('submitBtn').disabled = false;
+
+    // Show piece toggle if measures available
+    const toggle = document.getElementById('unit-toggle');
+    if (food.measures && food.measures.length > 0) {
+        toggle.style.display = 'flex';
+        const sel = document.getElementById('measure-select');
+        sel.innerHTML = food.measures.map(m =>
+            `<option value="${m.weight}" data-label="${m.label}">${m.label} (~${Math.round(m.weight)}g)</option>`
+        ).join('');
+    } else {
+        toggle.style.display = 'none';
+        switchUnit('grams');
     }
 
-    function selectFood(food) {
-        selectedFood = food;
+    updatePreview();
+}
 
-        // Update UI
-        document.getElementById('selected-name').textContent = food.name;
-        document.getElementById('selected-nutrition').innerHTML = `
-            <strong>Per 100g:</strong> ${Math.round(food.calories)} calories, 
-            ${Math.round(food.protein)}g protein, 
-            ${Math.round(food.carbs)}g carbs, 
-            ${Math.round(food.fat)}g fat
-        `;
+function switchUnit(mode) {
+    currentUnit = mode;
+    document.getElementById('gram-mode').style.display  = mode === 'grams'  ? 'block' : 'none';
+    document.getElementById('piece-mode').style.display = mode === 'pieces' ? 'block' : 'none';
+    document.getElementById('tab-grams').classList.toggle('active',  mode === 'grams');
+    document.getElementById('tab-pieces').classList.toggle('active', mode === 'pieces');
+    updatePreview();
+}
 
-        // Update form fields
-        document.getElementById('food_name').value = food.name;
-        document.getElementById('custom_calories').value = food.calories;
-        document.getElementById('custom_protein').value = food.protein;
-        document.getElementById('custom_carbs').value = food.carbs;
-        document.getElementById('custom_fat').value = food.fat;
+function onMeasureChange() { updatePreview(); }
 
-        // Show selected food, hide search results
-        selectedFoodDiv.style.display = 'block';
-        searchResults.style.display = 'none';
-        searchInput.value = food.name;
+function updatePreview() {
+    if (!selectedFood) return;
+    let grams, label;
+    if (currentUnit === 'grams') {
+        grams = parseFloat(document.getElementById('quantity-g').value) || 100;
+        label = grams + 'g';
+    } else {
+        const sel      = document.getElementById('measure-select');
+        const pieces   = parseFloat(document.getElementById('quantity-p').value) || 1;
+        const gramsEach= parseFloat(sel.value) || 100;
+        const mLabel   = sel.options[sel.selectedIndex]?.dataset.label || 'piece';
+        grams = pieces * gramsEach;
+        label = `${pieces} ${mLabel}`;
     }
 
-    // Hide search results when clicking outside
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.search-container')) {
-            searchResults.style.display = 'none';
-        }
-    });
+    const ratio = grams / 100;
+    const cal   = Math.round(selectedFood.calories * ratio);
+    const prot  = Math.round(selectedFood.protein  * ratio * 10) / 10;
+    const carb  = Math.round(selectedFood.carbs    * ratio * 10) / 10;
+    const fat   = Math.round(selectedFood.fat      * ratio * 10) / 10;
+
+    document.getElementById('preview-qty-label').textContent = label;
+    document.getElementById('preview-cal').textContent       = cal + ' kcal';
+    document.getElementById('cal-preview').style.display     = 'flex';
+
+    // Update hidden fields
+    document.getElementById('quantity').value       = grams;
+    document.getElementById('unit').value           = currentUnit === 'grams' ? 'g' : label;
+    document.getElementById('final_calories').value = cal;
+    document.getElementById('final_protein').value  = prot;
+    document.getElementById('final_carbs').value    = carb;
+    document.getElementById('final_fat').value      = fat;
+}
+
+// Gram controls
+function adjustQty(d)  { const el = document.getElementById('quantity-g'); el.value = Math.max(1,(parseFloat(el.value)||100)+d); updatePreview(); }
+function setQty(v)     { document.getElementById('quantity-g').value = v; updatePreview(); }
+document.getElementById('quantity-g').addEventListener('input', updatePreview);
+
+// Piece controls
+function adjustPieces(d) { const el = document.getElementById('quantity-p'); el.value = Math.max(0.5,(parseFloat(el.value)||1)+d); updatePreview(); }
+function setPieces(v)    { document.getElementById('quantity-p').value = v; updatePreview(); }
+document.getElementById('quantity-p').addEventListener('input', updatePreview);
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.search-group')) searchResults.style.display = 'none';
+});
 </script>
 {% endblock %}

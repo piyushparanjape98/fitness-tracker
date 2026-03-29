@@ -1,91 +1,261 @@
 {% extends "base.html" %}
-
+{% block title %}Dashboard – FitTrack{% endblock %}
 {% block content %}
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
 
-    <div>
-        <!-- Welcome username line -->
-        <h2 style="margin-bottom: 2rem;">Welcome, {{ user.username }}!</h2>
+{% set cal_pct   = [[(total_calories / user.target_calories * 100)|round(1), 0]|max, 100]|min %}
+{% set water_pct = [(total_water_ml / water_goal * 100)|round(1), 100]|min %}
+{% set p_pct     = [(total_protein  / tgt_p * 100)|round(1), 100]|min if tgt_p > 0 else 0 %}
+{% set c_pct     = [(total_carbs    / tgt_c * 100)|round(1), 100]|min if tgt_c > 0 else 0 %}
+{% set f_pct     = [(total_fat      / tgt_f * 100)|round(1), 100]|min if tgt_f > 0 else 0 %}
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <h3>{{ "%.0f"|format(total_calories) }}</h3>
-                <p>Calories Consumed</p>
-                <div class="progress-bar">
-                    <div class="progress-fill"
-                        style="width: {{ (total_calories / user.target_calories * 100)|round(1) }}%"></div>
-                </div>
+<div class="dashboard">
+
+    <!-- Header -->
+    <div class="dash-header">
+        <div>
+            <p class="dash-date">{{ now.strftime('%A, %B %d') }}</p>
+            <h1 class="dash-title">Hello, {{ user.username }}.</h1>
+        </div>
+        <div class="dash-header-right">
+            <div class="streak-badge {% if streak >= 7 %}streak-hot{% endif %}">
+                🔥 {{ streak }} day{{ 's' if streak != 1 }}
             </div>
+            <a href="{{ url_for('log_food') }}" class="btn btn-primary btn-add">+ Add</a>
+        </div>
+    </div>
 
-            <div class="stat-card">
-                <h3>{{ "%.0f"|format(remaining_calories) }}</h3>
-                <p>Calories Remaining</p>
+    <!-- BMI chip -->
+    <div class="bmi-bar">
+        <span class="bmi-label">BMI</span>
+        <span class="bmi-val {{ 'bmi-normal' if bmi_cat == 'Normal' else 'bmi-warn' }}">{{ bmi }} — {{ bmi_cat }}</span>
+        <span class="bmi-goal">Goal: {{ user.goal|title }} weight · {{ user.goal_weeks or 12 }} weeks</span>
+    </div>
+
+    <!-- Calorie Card -->
+    <div class="card calorie-card">
+        <div class="calorie-top">
+            <div>
+                <span class="calorie-label">Daily Calories</span>
+                <span class="calorie-goal-text">Goal: {{ user.target_calories }} kcal</span>
             </div>
-
-            <div class="stat-card">
-                <h3>{{ "%.1f"|format(total_protein) }}g</h3>
-                <p>Protein</p>
-            </div>
-
-            <div class="stat-card">
-                <h3>{{ "%.1f"|format(total_carbs) }}g</h3>
-                <p>Carbohydrates</p>
+            <div class="calorie-numbers">
+                <span class="calorie-consumed">{{ "%.0f"|format(total_calories) }}</span>
+                <span class="calorie-sep">/</span>
+                <span class="calorie-target">{{ user.target_calories }}</span>
             </div>
         </div>
+        <div class="progress-track">
+            <div class="progress-fill {% if cal_pct >= 100 %}over{% elif cal_pct >= 85 %}near{% endif %}"
+                 style="width: {{ cal_pct }}%"></div>
+        </div>
+        <div class="calorie-bottom">
+            <span class="remaining {% if remaining_calories < 0 %}over-budget{% endif %}">
+                {% if remaining_calories >= 0 %}{{ "%.0f"|format(remaining_calories) }} kcal remaining
+                {% else %}{{ "%.0f"|format(remaining_calories|abs) }} kcal over goal{% endif %}
+            </span>
+            <span class="cal-pct-label">{{ "%.0f"|format(cal_pct) }}%</span>
+        </div>
+    </div>
 
-        <div class="card">
-            <h3 style="margin-bottom: 1rem;">Today's Food Log</h3>
+    <!-- Macros with targets -->
+    {% if tgt_p > 0 %}
+    <div class="card macro-targets-card">
+        <h3 class="card-title">📊 Macro Targets</h3>
+        <div class="macro-target-row">
+            <div class="macro-target-item">
+                <div class="mt-header">
+                    <span class="mt-icon">🥩</span>
+                    <span class="mt-name">Protein</span>
+                    <span class="mt-val">{{ "%.0f"|format(total_protein) }}g <span class="mt-goal">/ {{ "%.0f"|format(tgt_p) }}g</span></span>
+                </div>
+                <div class="progress-track sm">
+                    <div class="progress-fill protein-fill" style="width: {{ p_pct }}%"></div>
+                </div>
+            </div>
+            <div class="macro-target-item">
+                <div class="mt-header">
+                    <span class="mt-icon">🌾</span>
+                    <span class="mt-name">Carbs</span>
+                    <span class="mt-val">{{ "%.0f"|format(total_carbs) }}g <span class="mt-goal">/ {{ "%.0f"|format(tgt_c) }}g</span></span>
+                </div>
+                <div class="progress-track sm">
+                    <div class="progress-fill carbs-fill" style="width: {{ c_pct }}%"></div>
+                </div>
+            </div>
+            <div class="macro-target-item">
+                <div class="mt-header">
+                    <span class="mt-icon">🧈</span>
+                    <span class="mt-name">Fat</span>
+                    <span class="mt-val">{{ "%.0f"|format(total_fat) }}g <span class="mt-goal">/ {{ "%.0f"|format(tgt_f) }}g</span></span>
+                </div>
+                <div class="progress-track sm">
+                    <div class="progress-fill fat-fill" style="width: {{ f_pct }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="macro-row">
+        <div class="macro-chip"><span class="macro-icon">🥩</span><div><div class="macro-val">{{ "%.0f"|format(total_protein) }}g</div><div class="macro-name">Protein</div></div></div>
+        <div class="macro-chip"><span class="macro-icon">🌾</span><div><div class="macro-val">{{ "%.0f"|format(total_carbs) }}g</div><div class="macro-name">Carbs</div></div></div>
+        <div class="macro-chip"><span class="macro-icon">🧈</span><div><div class="macro-val">{{ "%.0f"|format(total_fat) }}g</div><div class="macro-name">Fat</div></div></div>
+    </div>
+    {% endif %}
 
-            {% if today_logs %}
+    <!-- Water -->
+    <div class="card water-card">
+        <div class="water-header">
+            <div>
+                <h3 class="card-title">💧 Water Intake</h3>
+                <p class="water-subtitle"><strong>{{ total_water_ml }}</strong> ml of {{ water_goal }} ml goal</p>
+            </div>
+            <span class="water-pct">{{ "%.0f"|format(water_pct) }}%</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-fill water-fill" style="width: {{ water_pct }}%"></div>
+        </div>
+        <div class="water-buttons">
+            <button class="water-btn" onclick="addWater(150)">🥛 150ml</button>
+            <button class="water-btn" onclick="addWater(250)">🥤 250ml</button>
+            <button class="water-btn" onclick="addWater(500)">🍶 500ml</button>
+            <button class="water-btn water-btn-custom" onclick="showCustomWater()">✏️ Custom</button>
+        </div>
+        <div class="water-custom" id="waterCustom" style="display:none;">
+            <input type="number" id="customWaterInput" placeholder="ml" min="50" max="2000">
+            <button class="btn btn-primary" onclick="addCustomWater()">Add</button>
+            <button class="btn btn-ghost" onclick="hideCustomWater()">Cancel</button>
+        </div>
+        <p class="water-feedback" id="waterFeedback"></p>
+    </div>
+
+    <!-- Streak Heatmap -->
+    <div class="card">
+        <div class="card-header-row">
+            <h3 class="card-title">🗓️ Logging Streak</h3>
+            <span class="streak-count">🔥 {{ streak }} day streak &nbsp;<span id="heatmap-year" class="hm-year"></span></span>
+        </div>
+        <div class="heatmap-header">
+            <div class="hm-dow">Sun</div>
+            <div class="hm-dow">Mon</div>
+            <div class="hm-dow">Tue</div>
+            <div class="hm-dow">Wed</div>
+            <div class="hm-dow">Thu</div>
+            <div class="hm-dow">Fri</div>
+            <div class="hm-dow">Sat</div>
+        </div>
+        <div class="heatmap" id="heatmap"></div>
+        <p class="heatmap-legend"><span class="hm-dot hm-empty"></span> No log &nbsp; <span class="hm-dot hm-low"></span> Logged &nbsp; <span class="hm-dot hm-high"></span> On target</p>
+    </div>
+
+    <!-- Today's Log -->
+    <div class="card">
+        <div class="card-header-row">
+            <h3 class="card-title">🍽️ Today's Log</h3>
+            <a href="{{ url_for('log_food') }}" class="btn-text">+ Add</a>
+        </div>
+        {% if today_logs %}
+        <div class="food-log-list">
             {% for log in today_logs %}
             <div class="food-log-item">
-                <div>
-                    <h4>{{ log.food_name|title }}</h4>
-                    <small>{{ log.quantity }} g • P: {{ "%.1f"|format(log.protein) }}g • C: {{ "%.1f"|format(log.carbs)
-                        }}g • F: {{ "%.1f"|format(log.fat) }}g</small>
+                <div class="food-log-info">
+                    <span class="food-log-name">{{ log.food_name|title }}</span>
+                    <span class="food-log-meta">{{ log.quantity }}{{ log.unit or 'g' }} · P {{ "%.0f"|format(log.protein) }}g · C {{ "%.0f"|format(log.carbs) }}g · F {{ "%.0f"|format(log.fat) }}g</span>
                 </div>
-                <div class="calories">{{ "%.0f"|format(log.calories) }} cal</div>
+                <span class="food-log-cal">{{ "%.0f"|format(log.calories) }}<small>kcal</small></span>
             </div>
             {% endfor %}
-            {% else %}
-            <p style="text-align: center; color: #666; padding: 2rem;">No food logged today. <a
-                    href="{{ url_for('log_food') }}" style="color: #667eea;">Add your first meal!</a></p>
-            {% endif %}
         </div>
+        {% else %}
+        <div class="empty-log">
+            <p>Nothing logged yet today.</p>
+            <a href="{{ url_for('log_food') }}" class="btn btn-primary">Log your first meal →</a>
+        </div>
+        {% endif %}
     </div>
 
-    <div>
-        <div class="card">
-            <h3 style="margin-bottom: 1rem;">Quick Actions</h3>
-
-            <a href="{{ url_for('log_food') }}" class="btn"
-                style="width: 100%; margin-bottom: 1rem; display: block; text-align: center; text-decoration: none;">➕
-                Log Food</a>
-
-            <a href="{{ url_for('profile') }}" class="btn btn-secondary"
-                style="width: 100%; display: block; text-align: center; text-decoration: none;">👤 View Profile</a>
-
-            <!-- Added analytics link here -->
-            <a href="{{ url_for('analytics') }}" class="btn btn-info"
-                style="width: 100%; margin-top: 1rem; display: block; text-align: center; text-decoration: none;">📊
-                View Analytics</a>
-        </div>
-
-        <div class="card">
-            <h3 style="margin-bottom: 1rem;">Daily Goal</h3>
-            <p><strong>Target:</strong> {{ user.target_calories }} calories</p>
-            <p><strong>Goal:</strong> {{ user.goal|title }} Weight</p>
-            <div style="margin-top: 1rem;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                    <span>Progress</span>
-                    <span>{{ "%.1f"|format(total_calories / user.target_calories * 100) }}%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill"
-                        style="width: {{ (total_calories / user.target_calories * 100)|round(1) }}%"></div>
-                </div>
-            </div>
-        </div>
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <a href="{{ url_for('log_food') }}" class="action-card"><span class="action-icon">🍽️</span><span>Log Food</span></a>
+        <a href="{{ url_for('analytics') }}" class="action-card"><span class="action-icon">📊</span><span>Analytics</span></a>
+        <a href="{{ url_for('profile') }}" class="action-card"><span class="action-icon">👤</span><span>Profile</span></a>
     </div>
 </div>
+
+<script>
+// Water
+async function addWater(ml) {
+    const btn = event.target; btn.disabled = true;
+    const fd  = new FormData(); fd.append('amount_ml', ml);
+    try {
+        const r    = await fetch('/log_water', {method:'POST', body:fd});
+        const data = await r.json();
+        document.querySelector('.water-subtitle strong').textContent = data.total_ml;
+        document.querySelector('.water-fill').style.width = data.percent + '%';
+        document.querySelector('.water-pct').textContent  = Math.round(data.percent) + '%';
+        showWaterFeedback(`+${ml}ml 💧`);
+    } catch(e) { showWaterFeedback('Error', true); }
+    btn.disabled = false;
+}
+function showCustomWater()  { document.getElementById('waterCustom').style.display='flex'; document.getElementById('customWaterInput').focus(); }
+function hideCustomWater()  { document.getElementById('waterCustom').style.display='none'; }
+async function addCustomWater() {
+    const v = parseInt(document.getElementById('customWaterInput').value);
+    if (!v || v<=0) return; hideCustomWater(); await addWater(v);
+}
+function showWaterFeedback(m, err=false) {
+    const el = document.getElementById('waterFeedback');
+    el.textContent = m; el.style.color = err ? '#ef4444' : '#22c55e';
+    setTimeout(()=>el.textContent='', 2500);
+}
+
+// Heatmap
+const heatmapData = {{ heatmap|tojson }};
+const hmTarget    = {{ user.target_calories }};
+const hm          = document.getElementById('heatmap');
+const MONTHS      = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Set year label
+if (heatmapData.length > 0) {
+    const yr = document.getElementById('heatmap-year');
+    if (yr) yr.textContent = new Date(heatmapData[heatmapData.length-1].date + 'T00:00:00').getFullYear();
+}
+
+// Blank offset cells for weekday alignment
+if (heatmapData.length > 0) {
+    const firstDow = new Date(heatmapData[0].date + 'T00:00:00').getDay();
+    for (let i = 0; i < firstDow; i++) {
+        const b = document.createElement('div');
+        b.className = 'hm-cell hm-blank';
+        hm.appendChild(b);
+    }
+}
+
+let lastMonth = -1;
+heatmapData.forEach(d => {
+    const dt     = new Date(d.date + 'T00:00:00');
+    const month  = dt.getMonth();
+    const dayNum = dt.getDate();
+
+    const cell = document.createElement('div');
+
+    // Build class list — color first
+    let cls = 'hm-cell';
+    if (d.has_log) {
+        const pct = d.calories / hmTarget;
+        cls += (pct >= 0.85 && pct <= 1.1) ? ' hm-high' : ' hm-low';
+    }
+    cell.className = cls;
+    cell.title = d.date + ': ' + Math.round(d.calories) + ' kcal';
+
+    if (month !== lastMonth) {
+        // Month label cell: show "Mar 1" style
+        cell.innerHTML = '<span class="hm-month-badge">' + MONTHS[month] + '</span><span class="hm-day-corner">' + dayNum + '</span>';
+        lastMonth = month;
+    } else {
+        cell.innerHTML = '<span class="hm-day-num">' + dayNum + '</span>';
+    }
+
+    hm.appendChild(cell);
+});
+</script>
 {% endblock %}

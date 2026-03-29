@@ -1,47 +1,117 @@
 {% extends "base.html" %}
-
+{% block title %}Profile – FitTrack{% endblock %}
 {% block content %}
-<div class="card" style="max-width: 500px; margin: 0 auto;">
-    <h2 style="text-align: center; margin-bottom: 2rem; color: #667eea;">Your Profile</h2>
 
-    <div style="display: grid; gap: 1rem;">
-        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-            <strong>Username:</strong> {{ user.username }}
-        </div>
+<div class="profile-page">
+    <div class="page-header">
+        <h1 class="page-title">👤 Your Profile</h1>
+    </div>
 
-        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-            <strong>Email:</strong> {{ user.email }}
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <strong>Height:</strong> {{ user.height }} cm
+    <!-- BMI Card -->
+    <div class="card bmi-card">
+        <div class="bmi-display">
+            <div class="bmi-circle {{ 'bmi-good' if bmi_cat == 'Normal' else 'bmi-warn' }}">
+                <span class="bmi-number">{{ bmi }}</span>
+                <span class="bmi-label-sm">BMI</span>
             </div>
-
-            <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <strong>Weight:</strong> {{ user.weight }} kg
+            <div class="bmi-info">
+                <h3 class="bmi-cat {{ 'bmi-good' if bmi_cat == 'Normal' else 'bmi-warn' }}">{{ bmi_cat }}</h3>
+                <p class="bmi-detail">{{ user.weight }}kg · {{ user.height }}cm · {{ user.age }}y</p>
+                <p class="bmi-goal-text">Goal: <strong>{{ user.goal|title }} weight</strong> in {{ user.goal_weeks or 12 }} weeks</p>
+                <p class="bmi-cals">Target: <strong>{{ user.target_calories }} kcal/day</strong></p>
             </div>
         </div>
 
-        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-            <strong>Age:</strong> {{ user.age }} years
-        </div>
-
-        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-            <strong>Fitness Goal:</strong> {{ user.goal|title }} Weight
-        </div>
-
-        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-            <strong>Daily Calorie Target:</strong> {{ user.target_calories }} calories
-        </div>
-
-        <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-            <strong>Member Since:</strong> {{ user.created_at.strftime('%B %d, %Y') }}
+        <!-- Macro targets display -->
+        <div class="profile-macros">
+            <div class="pm-chip"><span>🥩</span><div><div class="pm-val">{{ "%.0f"|format(user.target_protein or 0) }}g</div><div class="pm-label">Protein</div></div></div>
+            <div class="pm-chip"><span>🌾</span><div><div class="pm-val">{{ "%.0f"|format(user.target_carbs or 0) }}g</div><div class="pm-label">Carbs</div></div></div>
+            <div class="pm-chip"><span>🧈</span><div><div class="pm-val">{{ "%.0f"|format(user.target_fat or 0) }}g</div><div class="pm-label">Fat</div></div></div>
         </div>
     </div>
 
-    <div style="text-align: center; margin-top: 2rem;">
-        <a href="{{ url_for('dashboard') }}" style="color: #667eea;">← Back to Dashboard</a>
+    <!-- Edit Form -->
+    <div class="card">
+        <h3 class="card-title">✏️ Edit Profile</h3>
+        <form method="POST">
+
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" value="{{ user.username }}" disabled class="input-disabled">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="text" value="{{ user.email }}" disabled class="input-disabled">
+                </div>
+            </div>
+
+            <div class="form-row-3">
+                <div class="form-group">
+                    <label class="form-label">Height (cm)</label>
+                    <input type="number" name="height" value="{{ user.height }}" min="100" max="250" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Weight (kg)</label>
+                    <input type="number" name="weight" value="{{ user.weight }}" min="30" max="300" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Age</label>
+                    <input type="number" name="age" value="{{ user.age }}" min="10" max="120" required>
+                </div>
+            </div>
+
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label class="form-label">Gender</label>
+                    <select name="gender">
+                        <option value="male"   {% if user.gender == 'male'   %}selected{% endif %}>Male</option>
+                        <option value="female" {% if user.gender == 'female' %}selected{% endif %}>Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fitness Goal</label>
+                    <select name="goal">
+                        <option value="lose"     {% if user.goal == 'lose'     %}selected{% endif %}>Lose Weight</option>
+                        <option value="maintain" {% if user.goal == 'maintain' %}selected{% endif %}>Maintain</option>
+                        <option value="gain"     {% if user.goal == 'gain'     %}selected{% endif %}>Gain Weight</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Activity Level</label>
+                <select name="activity_level">
+                    <option value="sedentary"   {% if user.activity_level == 'sedentary'   %}selected{% endif %}>Sedentary (desk job, no exercise)</option>
+                    <option value="light"       {% if user.activity_level == 'light'       %}selected{% endif %}>Light (1–2x/week exercise)</option>
+                    <option value="moderate"    {% if user.activity_level == 'moderate'    %}selected{% endif %}>Moderate (3–4x/week exercise)</option>
+                    <option value="active"      {% if user.activity_level == 'active'      %}selected{% endif %}>Active (5–6x/week exercise)</option>
+                    <option value="very_active" {% if user.activity_level == 'very_active' %}selected{% endif %}>Very Active (daily intense training)</option>
+                </select>
+            </div>
+
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label class="form-label">Goal Timeline (weeks)</label>
+                    <input type="number" name="goal_weeks" value="{{ user.goal_weeks or 12 }}" min="2" max="104">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Daily Water Goal (ml)</label>
+                    <input type="number" name="water_goal_ml" value="{{ user.water_goal_ml or 2500 }}" min="500" max="5000" step="100">
+                </div>
+            </div>
+
+            <div class="profile-note">
+                💡 Updating your profile recalculates your calorie target and macro goals automatically.
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Save Changes</button>
+        </form>
+    </div>
+
+    <div class="card member-card">
+        <span>📅 Member since {{ user.created_at.strftime('%B %Y') }}</span>
     </div>
 </div>
+
 {% endblock %}
